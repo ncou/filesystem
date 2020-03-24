@@ -1,5 +1,5 @@
 {
-    "name": "mnapoli/myproject",
+    "name": "chiron/filesystem",
     "description": "Give it a nice description!",
     "keywords": [],
     "homepage": "http://example.com",
@@ -7,16 +7,16 @@
     "type": "library",
     "autoload": {
         "psr-4": {
-            "MyProject\\": "src/"
+            "Chiron\\Boot\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "MyProject\\Test\\": "tests/"
+            "Chiron\\Tests\\Boot\\": "tests"
         }
     },
     "require": {
-        "php": "^7.3"
+        "php": "^7.1"
     },
     "require-dev": {
         "phpunit/phpunit": "^8.0"
