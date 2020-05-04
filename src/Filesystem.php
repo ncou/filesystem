@@ -6,14 +6,39 @@ namespace Chiron\Boot;
 
 use Chiron\Boot\Exception\FileNotFoundException;
 
+use EmptyIterator;
+use FilesystemIterator;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use Iterator;
+use Traversable;
+use CallbackFilterIterator;
+use SplFileInfo;
+use RegexIterator;
+use RecursiveRegexIterator;
+
+//https://github.com/opulencephp/Opulence/blob/1.1/src/Opulence/IO/FileSystem.php
+
+//https://github.com/ventoviro/windwalker-filesystem/blob/master/Filesystem.php
+//https://github.com/ventoviro/windwalker-filesystem/blob/master/Path.php
+
+//https://github.com/cakephp/filesystem/blob/master/Folder.php
+//https://github.com/paamayim/PHP-Filesystem-Helper/blob/master/src/FilesystemHelper/FilesystemHelper.php#L20
+//https://github.com/owncloud/core/blob/master/lib/private/Files/Filesystem.php
+
+
 //https://github.com/illuminate/filesystem/blob/master/Filesystem.php
 //https://github.com/spiral/files/blob/master/src/Files.php
 //https://github.com/nette/utils/blob/master/src/Utils/FileSystem.php
+//https://github.com/composer/composer/blob/2285a79c6302576dec07c9bb8b52d24e6b4e8015/src/Composer/Util/Filesystem.php#L283
+
+//https://github.com/naucon/File/blob/master/src/
 
 // TODO : exemple de purge d'un répertoire :
 //https://github.com/contributte/console-extra/blob/master/src/Utils/Files.php#L16
 
 // TODO : renommer la classe en FileSystem avec un S majuscule !!!!
+// TODO : créer une interface FilesystemInterface ?????
 final class Filesystem
 {
     /**
@@ -196,22 +221,6 @@ final class Filesystem
         return mkdir($path, $mode, $recursive);
     }
 
-    public function getFiles(string $location, string $pattern = null): array
-    {
-        $result = [];
-        foreach ($this->filesIterator($location, $pattern) as $filename) {
-            if ($this->isDirectory($filename->getPathname())) {
-                $result = array_merge($result, $this->getFiles($filename . DIRECTORY_SEPARATOR));
-
-                continue;
-            }
-
-            $result[] = $this->normalizePath((string)$filename);
-        }
-
-        return $result;
-    }
-
     /**
      * Joins all given path segments then normalizes the resulting path.
      */
@@ -280,17 +289,115 @@ final class Filesystem
             : implode(DIRECTORY_SEPARATOR, $res);
     }
 
-    /**
-     * @param string      $location
-     * @param string|null $pattern
-     *
-     * @return \GlobIterator|\SplFileInfo[]
-     */
-    private function filesIterator(string $location, string $pattern = null): \GlobIterator
-    {
-        $pattern = $pattern ?? '*';
-        $regexp = rtrim($location, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . ltrim($pattern, DIRECTORY_SEPARATOR);
+    
 
-        return new \GlobIterator($regexp);
+
+    /**
+     * Compares two files and returns true if their contents is equal.
+     *
+     * @param $file1
+     * @param $file2
+     * @return bool
+     */
+    /*
+    public static function filesHaveSameContents($file1, $file2): bool
+    {
+        return sha1_file($file1) === sha1_file($file2);
+    }*/
+
+    /**
+     * Get an array of all files in a given directory.
+     *
+     * @param string $directory
+     * @param bool   $recursive    Whether or not we should recurse through child directories
+     *
+     * @return Iterator<string, SplFileInfo>
+     */
+    public function files(string $directory, bool $recursive = true): Traversable
+    {
+        $iterator = $this->buildIterator($directory, $recursive);
+
+        $files = new CallbackFilterIterator($iterator, function (SplFileInfo $item) {
+            return $item->isFile();
+        });
+
+        return $files;
+    }
+
+    /**
+     * Get an array of all directories in a given directory.
+     *
+     * @param string $directory
+     * @param bool   $recursive    Whether or not we should recurse through child directories
+     *
+     * @return Iterator<string, SplFileInfo>
+     */
+    public function directories(string $directory, bool $recursive = true): Traversable
+    {
+        $iterator = $this->buildIterator($directory, $recursive);
+
+        $directories = new CallbackFilterIterator($iterator, function (SplFileInfo $item) {
+            return $item->isDir();
+        });
+
+        return $directories;
+    }
+
+    public function find(string $directory, string $mask, bool $recursive = true): Traversable
+    {
+        $regex = $this->toRegEx($mask);
+        $iterator = $this->buildIterator($directory, $recursive);
+
+        $finder = new CallbackFilterIterator($iterator, function (SplFileInfo $item) use ($regex, $iterator) {
+            return $regex === null || preg_match($regex, '/' . strtr($iterator->getSubPathName(), '\\', '/'));
+        });
+
+        return $finder;
+    }
+
+    // TODO : tester quand le mask est vie ou seulement à '*'
+    private function toRegEx(string $mask): ?string
+    {
+        $mask = rtrim(strtr($mask, '\\', '/'), '/');
+        $prefix = '';
+
+        if ($mask === '') {
+            // TODO : on devrait plutot lever une exception pour indiquer que le mask est incorrect !!!
+            return null;
+        } elseif ($mask === '*') {
+            return null;
+        } elseif ($mask[0] === '/') { // absolute fixing
+            $mask = ltrim($mask, '/');
+            $prefix = '(?<=^/)';
+        }
+
+        $pattern = $prefix . strtr(preg_quote($mask, '#'),
+            ['\*\*' => '.*', '\*' => '[^/]*', '\?' => '[^/]', '\[\!' => '[^', '\[' => '[', '\]' => ']', '\-' => '-']);
+
+        return '#/(' . $pattern . ')$#Di';
+    }
+
+    /**
+     * Gets all of the files or directories at the input path.
+     *
+     * @param string $directory
+     * @param bool   $recursive    Whether or not we should recurse through child directories
+     *
+     * @return Iterator<string, \SplFileInfo>
+     */
+    private function buildIterator(string $directory, bool $recursive): Iterator 
+    {
+        if (! $this->isDirectory($directory)) {
+            return new EmptyIterator();
+        }
+
+        $flags = FilesystemIterator::FOLLOW_SYMLINKS | FilesystemIterator::SKIP_DOTS;
+        $iterator = new RecursiveDirectoryIterator($directory, $flags);
+
+        if ($recursive) {
+            $iterator = new RecursiveIteratorIterator($iterator, RecursiveIteratorIterator::SELF_FIRST);
+        }
+
+        return $iterator;
     }
 }
