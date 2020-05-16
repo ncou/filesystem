@@ -17,12 +17,25 @@ use SplFileInfo;
 use RegexIterator;
 use RecursiveRegexIterator;
 
+//https://github.com/webmozart/path-util/blob/master/src/Path.php
+
+//https://github.com/yiisoft/files/blob/ee71f385bd1cb31d8cd40d6752efc15c66403cac/src/FileHelper.php
+
 //https://github.com/opulencephp/Opulence/blob/1.1/src/Opulence/IO/FileSystem.php
 
 //https://github.com/ventoviro/windwalker-filesystem/blob/master/Filesystem.php
 //https://github.com/ventoviro/windwalker-filesystem/blob/master/Path.php
 
+
+//https://github.com/thephpleague/flysystem/blob/d13c43dbd4b791f815215959105a008515d1a2e0/src/Filesystem.php
+//https://github.com/thephpleague/flysystem/blob/d13c43dbd4b791f815215959105a008515d1a2e0/src/File.php
+//https://github.com/thephpleague/flysystem/blob/d13c43dbd4b791f815215959105a008515d1a2e0/src/Directory.php
+
+//https://github.com/cakephp/filesystem/blob/master/Filesystem.php
 //https://github.com/cakephp/filesystem/blob/master/Folder.php
+//https://github.com/cakephp/filesystem/blob/master/File.php
+
+
 //https://github.com/paamayim/PHP-Filesystem-Helper/blob/master/src/FilesystemHelper/FilesystemHelper.php#L20
 //https://github.com/owncloud/core/blob/master/lib/private/Files/Filesystem.php
 
@@ -37,8 +50,6 @@ use RecursiveRegexIterator;
 // TODO : exemple de purge d'un répertoire :
 //https://github.com/contributte/console-extra/blob/master/src/Utils/Files.php#L16
 
-// TODO : renommer la classe en FileSystem avec un S majuscule !!!!
-// TODO : créer une interface FilesystemInterface ?????
 final class Filesystem
 {
     /**
@@ -199,6 +210,7 @@ final class Filesystem
      *
      * @return mixed
      */
+    // TODO : fonction à virer (actuellement utilisée uniquement dans le PackageManifest, si on passe par un format json cette fonction ne servira plus à rien)
     public function getRequire(string $filename)
     {
         if ($this->isFile($filename)) {
@@ -236,6 +248,7 @@ final class Filesystem
      * @param  string $path Path to the file or directory
      * @return string
      */
+    //https://github.com/composer/composer/blob/74a63b4d6b16aede081a12fbec7645ecbfa8bc64/src/Composer/Util/Filesystem.php#L477
     public function normalizePath(string $path): string
     {
         $parts = array();
@@ -271,6 +284,7 @@ final class Filesystem
     /**
      * Normalizes ../. and directory separators in path.
      */
+    //https://github.com/nette/utils/blob/69c5192b68ec3c7d0ee236bf9c47c4d1a54e7d29/src/Utils/FileSystem.php#L158
     public static function normalizePath2(string $path): string
     {
         $parts = $path === '' ? [] : preg_split('~[/\\\\]+~', $path);
@@ -288,6 +302,119 @@ final class Filesystem
             ? DIRECTORY_SEPARATOR
             : implode(DIRECTORY_SEPARATOR, $res);
     }
+
+    /**
+     * Normalizes a file/directory path.
+     *
+     * The normalization does the following work:
+     *
+     * - Convert all directory separators into `/` (e.g. "\a/b\c" becomes "/a/b/c")
+     * - Remove trailing directory separators (e.g. "/a/b/c/" becomes "/a/b/c")
+     * - Turn multiple consecutive slashes into a single one (e.g. "/a///b/c" becomes "/a/b/c")
+     * - Remove ".." and "." based on their meanings (e.g. "/a/./b/../c" becomes "/a/c")
+     *
+     * @param string $path the file/directory path to be normalized
+     *
+     * @return string the normalized file/directory path
+     */
+    //https://github.com/yiisoft/files/blob/ee71f385bd1cb31d8cd40d6752efc15c66403cac/src/FileHelper.php#L108
+    public static function normalizePath4(string $path): string
+    {
+        $isWindowsShare = strpos($path, '\\\\') === 0;
+
+        if ($isWindowsShare) {
+            $path = substr($path, 2);
+        }
+
+        $path = rtrim(strtr($path, '/\\', '//'), '/');
+
+        if (strpos('/' . $path, '/.') === false && strpos($path, '//') === false) {
+            return $isWindowsShare ? "\\\\$path" : $path;
+        }
+
+        $parts = [];
+
+        foreach (explode('/', $path) as $part) {
+            if ($part === '..' && !empty($parts) && end($parts) !== '..') {
+                array_pop($parts);
+            } elseif ($part !== '.' && ($part !== '' || empty($parts))) {
+                $parts[] = $part;
+            }
+        }
+
+        $path = implode('/', $parts);
+
+        if ($isWindowsShare) {
+            $path = '\\\\' . $path;
+        }
+
+        return $path === '' ? '.' : $path;
+    }
+
+
+
+
+
+
+    /**
+     * Returns a correct set of slashes for given $path. (\\ for Windows paths and / for other paths.)
+     *
+     * @param string $path Path to transform
+     * @return string Path with the correct set of slashes ("\\" or "/")
+     */
+    //https://github.com/cakephp/filesystem/blob/master/Folder.php#L362
+    public static function normalizeFullPath(string $path): string
+    {
+        $to = Folder::correctSlashFor($path);
+        $from = ($to === '/' ? '\\' : '/');
+
+        return str_replace($from, $to, $path);
+    }
+
+
+    /**
+     * Normalize a path. This method will do clean() first to replace slashes and remove '..' to create a
+     * Clean path. Unlike realpath(), if this path not exists, normalise() will still return this path.
+     *
+     * @param   string $path The path to normalize.
+     * @param   string $ds   Directory separator (optional).
+     *
+     * @return  string  The normalized path.
+     *
+     * @since   2.0.4
+     * @throws  \UnexpectedValueException If $path is not a string.
+     */
+    //https://github.com/ventoviro/windwalker-filesystem/blob/master/Path.php#L209
+    public static function normalize($path, $ds = DIRECTORY_SEPARATOR)
+    {
+        $parts = [];
+        $path = static::clean($path, $ds);
+        $segments = explode($ds, $path);
+
+        foreach ($segments as $segment) {
+            if ($segment !== '.') {
+                $test = array_pop($parts);
+
+                if (null === $test) {
+                    $parts[] = $segment;
+                } elseif ($segment === '..') {
+                    if ($test === '..') {
+                        $parts[] = $test;
+                    }
+
+                    if ($test === '..' || $test === '') {
+                        $parts[] = $segment;
+                    }
+                } else {
+                    $parts[] = $test;
+                    $parts[] = $segment;
+                }
+            }
+        }
+
+        return implode($ds, $parts);
+    }
+
 
     
 
@@ -356,6 +483,7 @@ final class Filesystem
     }
 
     // TODO : tester quand le mask est vie ou seulement à '*'
+    // TODO : déplacer ce bout de code dans une classe Utils ????
     private function toRegEx(string $mask): ?string
     {
         $mask = rtrim(strtr($mask, '\\', '/'), '/');
@@ -400,4 +528,73 @@ final class Filesystem
 
         return $iterator;
     }
+
+
+
+
+    /**
+     * {@inheritdoc}
+     *
+     * @link http://stackoverflow.com/questions/2637945/getting-relative-path-from-absolute-path-in-php
+     */
+    //https://github.com/spiral/files/blob/master/src/Files.php#L384
+    public function relativePath(string $path, string $from): string
+    {
+        $path = $this->normalizePath($path);
+        $from = $this->normalizePath($from);
+
+        $from = explode('/', $from);
+        $path = explode('/', $path);
+        $relative = $path;
+
+        foreach ($from as $depth => $dir) {
+            //Find first non-matching dir
+            if ($dir === $path[$depth]) {
+                //Ignore this directory
+                array_shift($relative);
+            } else {
+                //Get number of remaining dirs to $from
+                $remaining = count($from) - $depth;
+                if ($remaining > 1) {
+                    //Add traversals up to first matching directory
+                    $padLength = (count($relative) + $remaining - 1) * -1;
+                    $relative = array_pad($relative, $padLength, '..');
+                    break;
+                } else {
+                    $relative[0] = './' . $relative[0];
+                }
+            }
+        }
+
+        return implode('/', $relative);
+    }
+
+
+    /**
+     * @param string[] $ignored
+     */
+    //https://github.com/contributte/console-extra/blob/master/src/Utils/Files.php#L16
+    public static function purge(string $dir, array $ignored = []): void
+    {
+        if (!is_dir($dir) && !mkdir($dir)) {
+            throw new RuntimeException(sprintf('Directory "%s" was not created', $dir));
+        }
+
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        /** @var SplFileObject $entry */
+        foreach ($iterator as $entry) {
+            if (!in_array(str_replace('\\', '/', (string) $entry->getRealPath()), $ignored, true)) {
+                if ($entry->isDir()) {
+                    rmdir((string) $entry->getRealPath());
+                } else {
+                    unlink((string) $entry->getRealPath());
+                }
+            }
+        }
+    }
+
 }
