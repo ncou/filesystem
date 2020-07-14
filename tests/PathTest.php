@@ -9,6 +9,7 @@ use PHPUnit\Framework\TestCase;
 
 class PathTest extends TestCase
 {
+    // https://github.com/spiral/files/blob/38b7ced7bb7c859769289a5fa4d19269c65b2570/tests/Files/ConversionTest.php#L32
     public function testRelativePath()
     {
         $this->assertSame(
@@ -38,6 +39,7 @@ class PathTest extends TestCase
     } 
 
 
+    //https://github.com/symfony/routing/blob/b91f3a97482d67dea674b13c7b76825c5ae88952/Tests/Generator/UrlGeneratorTest.php#L717
     /**
      * @dataProvider provideRelativePaths
      */
@@ -151,6 +153,11 @@ class PathTest extends TestCase
             ],
         ];
     } 
+
+
+
+
+
 
     //https://github.com/yiisoft/files/blob/ee71f385bd1cb31d8cd40d6752efc15c66403cac/tests/FileHelperTest.php#L166
     public function testNormalizePath(): void

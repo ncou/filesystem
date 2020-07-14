@@ -96,6 +96,23 @@ final class Path
         return $res === [''] ? $ds : implode($ds, $res);
     }
 
+    /**
+     * Create the most normalized version for path to file or location.
+     *
+     * @param string $path File or location path.
+     * @param bool   $asDirectory Path points to directory.
+     *
+     * @return string
+     */
+    //https://github.com/spiral/files/blob/38b7ced7bb7c859769289a5fa4d19269c65b2570/src/Files.php#L370
+    public function normalizePath4(string $path, bool $asDirectory = false): string
+    {
+        $path = str_replace(['//', '\\'], '/', $path);
+
+        //Potentially open links and ../ type directories?
+        return rtrim($path, '/') . ($asDirectory ? '/' : '');
+    }
+
 
     /**
      * Normalize relative directories in a path.
@@ -249,7 +266,9 @@ final class Path
      * @return string The relative target path
      */
     //https://github.com/symfony/Routing/blob/master/Generator/UrlGenerator.php#L336
-    public static function getRelativePath(string $basePath, string $targetPath)
+    //https://github.com/symfony/routing/blob/b91f3a97482d67dea674b13c7b76825c5ae88952/Tests/Generator/UrlGeneratorTest.php#L717
+    // TODO : il faudrait pas normalier les '\' par des '/' dans le cas ou on est sous Windows ??? car sinon cela ne va pas marcher !!!!!
+    public static function getRelativePath2(string $basePath, string $targetPath): string
     {
         if ($basePath === $targetPath) {
             return '';
@@ -279,5 +298,139 @@ final class Path
             || false !== ($colonPos = strpos($path, ':')) && ($colonPos < ($slashPos = strpos($path, '/')) || false === $slashPos)
             ? "./$path" : $path;
     }
+
+
+
+
+    /**
+     * Find relative path of file (remove root part)
+     *
+     * @param string      $filePath
+     * @param string|null $rootPath
+     * @param string      $forceDS
+     * @param bool        $toRealpath
+     * @return mixed
+     */
+    //https://github.com/JBZoo/Utils/blob/5a2b7c01f48318585212fa9876c8c48c8817d974/src/FS.php#L493
+    public static function getRelative($filePath, $rootPath = null, $forceDS = DIRECTORY_SEPARATOR, $toRealpath = true)
+    {
+        // Cleanup file path
+        if ($toRealpath && !self::isReal($filePath)) {
+            $filePath = self::real($filePath);
+        }
+        $filePath = self::clean($filePath, $forceDS);
+
+
+        // Cleanup root path
+        $rootPath = $rootPath ?: Sys::getDocRoot();
+        if ($toRealpath && !self::isReal($rootPath)) {
+            $rootPath = self::real($rootPath);
+        }
+        $rootPath = self::clean($rootPath, $forceDS);
+
+
+        // Remove root part
+        $relPath = preg_replace('#^' . preg_quote($rootPath, null) . '#i', '', $filePath);
+        $relPath = ltrim($relPath, $forceDS);
+
+        return $relPath;
+    }
+
+
+
+
+
+
+
+
+//https://github.com/catalyst/moodle-auth_saml2/blob/master/extlib/simplesamlphp/lib/SimpleSAML/Utils/System.php#L121
+
+    /**
+     * Resolve a (possibly) relative path from the given base path.
+     *
+     * A path which starts with a '/' is assumed to be absolute, all others are assumed to be
+     * relative. The default base path is the root of the SimpleSAMLphp installation.
+     *
+     * @param string      $path The path we should resolve.
+     * @param string      $base The base path, where we should search for $path from. 
+     *
+     * @return string An absolute path referring to $path.
+     */
+    public static function resolvePath(string $path, string $base): string
+    {
+        // normalise directory separator
+        $base = str_replace('\\', '/', $base);
+        $path = str_replace('\\', '/', $path);
+
+        // remove trailing slashes
+        $base = rtrim($base, '/');
+        $path = rtrim($path, '/');
+
+        // check for absolute path
+        if (substr($path, 0, 1) === '/') {
+            // absolute path. */
+            $ret = '/';
+        } elseif (static::pathContainsDriveLetter($path)) {
+            $ret = '';
+        } else {
+            // path relative to base
+            $ret = $base;
+        }
+
+        $path = explode('/', $path);
+        foreach ($path as $d) {
+            if ($d === '.') {
+                continue;
+            } elseif ($d === '..') {
+                $ret = dirname($ret);
+            } else {
+                if ($ret && substr($ret, -1) !== '/') {
+                    $ret .= '/';
+                }
+                $ret .= $d;
+            }
+        }
+
+        return $ret;
+    }
+
+
+    /**
+     * Check if the supplied path contains a Windows-style drive letter.
+     *
+     * @param string $path
+     *
+     * @return bool
+     */
+    private static function pathContainsDriveLetter(string $path): bool
+    {
+        $letterAsciiValue = ord(strtoupper(substr($path, 0, 1)));
+        return substr($path, 1, 1) === ':'
+                && $letterAsciiValue >= 65 && $letterAsciiValue <= 90;
+    }
+
+
+
+
+
+
+    // https://github.com/twigphp/Twig/blob/3.x/src/Loader/FilesystemLoader.php#273
+    private function isAbsolutePath(string $file): bool
+    {
+        return strspn($file, '/\\', 0, 1)
+            || (\strlen($file) > 3 && ctype_alpha($file[0])
+                && ':' === $file[1]
+                && strspn($file, '/\\', 2, 1)
+            )
+            || null !== parse_url($file, PHP_URL_SCHEME)
+        ;
+    }
+
+    //https://github.com/symfony/twig-bridge/blob/master/Command/DebugCommand.php#L549
+    private function isAbsolutePath2(string $file): bool
+    {
+        return strspn($file, '/\\', 0, 1) || (\strlen($file) > 3 && ctype_alpha($file[0]) && ':' === $file[1] && strspn($file, '/\\', 2, 1)) || null !== parse_url($file, PHP_URL_SCHEME);
+    }
+
 
 }

@@ -17,6 +17,10 @@ use SplFileInfo;
 use RegexIterator;
 use RecursiveRegexIterator;
 
+//https://github.com/codeigniter4/CodeIgniter4/blob/c3e545d9f2a25c61031a65ff6ed25466f1a6a278/system/Helpers/filesystem_helper.php
+
+//https://github.com/JBZoo/Utils/blob/5a2b7c01f48318585212fa9876c8c48c8817d974/src/FS.php
+
 //https://github.com/webmozart/path-util/blob/master/src/Path.php
 
 //https://github.com/yiisoft/files/blob/ee71f385bd1cb31d8cd40d6752efc15c66403cac/src/FileHelper.php
@@ -201,6 +205,105 @@ final class Filesystem
         rename($tempPath, $path);
     }
 
+
+
+
+
+
+    /**
+     * Recursively delete a directory.
+     *
+     * The directory itself may be optionally preserved.
+     *
+     * @param  string  $directory
+     * @param  bool  $preserve
+     * @return bool
+     */
+    //https://github.com/yiisoft/files/blob/ee71f385bd1cb31d8cd40d6752efc15c66403cac/src/FileHelper.php#L153 + TESTS Symlink !!!!!     https://github.com/yiisoft/files/blob/ee71f385bd1cb31d8cd40d6752efc15c66403cac/tests/FileHelperTest.php#L84
+    //https://github.com/illuminate/filesystem/blob/master/Filesystem.php#L610
+    //https://github.com/spiral/files/blob/master/src/Files.php#L176
+    //https://github.com/composer/composer/blob/2285a79c6302576dec07c9bb8b52d24e6b4e8015/src/Composer/Util/Filesystem.php#L150
+    //https://github.com/nette/utils/blob/master/src/Utils/FileSystem.php#L72
+    public function deleteDirectory(string $directory, bool $preserve = false): bool
+    {
+        if (! $this->isDirectory($directory)) {
+            // TODO : lever une exception si ce n'est pas un répertoire ou qu'il n'existe pas ? plutot que de retourner un booléen ?
+            return false;
+        }
+
+        //$items = new FilesystemIterator($directory);
+        $items = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($directory, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        foreach ($items as $item) {
+            if ($item->isDir() && ! $item->isLink()) {
+                rmdir($item->getRealPath());
+            } else {
+                unlink($item->getRealPath());
+            }
+        }
+
+        if (! $preserve) {
+            rmdir($directory);
+        }
+
+        return true;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /**
+     * {@inheritdoc}
+     */
+    // TODO : https://github.com/ventoviro/windwalker-filesystem/blob/8ed58bd689224b301ae5b0d3dade988fbefbfc44/Path.php#L107
+    public function getPermissions(string $filename): int
+    {
+        if (!$this->exists($filename)) {
+            throw new FileNotFoundException($filename);
+        }
+
+        //TODO : faire un decoct ? mais cela retourna une string !!!!     https://github.com/cakephp/filesystem/blob/8fe8713f9be87e0fe08d445e5f6a3b5ebb6923ca/File.php#L461
+        return fileperms($filename) & 0777;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    //https://github.com/illuminate/filesystem/blob/master/Filesystem.php#L195
+    // TODO : https://github.com/ventoviro/windwalker-filesystem/blob/8ed58bd689224b301ae5b0d3dade988fbefbfc44/Path.php#L55
+    // TODO : https://github.com/cakephp/filesystem/blob/7d7df204b495d1be864254c7804c117fa5ac4ba0/Folder.php#L446
+    public function setPermissions(string $filename, int $mode): bool
+    {
+        // TODO : voir si on conserve ce "if". Réfléchir aussi si on devrait pas utiliser la méthode interne isDir() au lieu de is_dir()
+        if (is_dir($filename)) {
+            //Directories must always be executable (i.e. 664 for dir => 775)
+            $mode |= 0111;
+        }
+
+        return $this->getPermissions($filename) === $mode || chmod($filename, $mode);
+    }
+
     /**
      * Get the returned value of a file.
      *
@@ -211,6 +314,7 @@ final class Filesystem
      * @return mixed
      */
     // TODO : fonction à virer (actuellement utilisée uniquement dans le PackageManifest, si on passe par un format json cette fonction ne servira plus à rien)
+    /*
     public function getRequire(string $filename)
     {
         if ($this->isFile($filename)) {
@@ -218,7 +322,7 @@ final class Filesystem
         }
 
         throw new FileNotFoundException();
-    }
+    }*/
 
     /**
      * Create a directory.
@@ -470,6 +574,8 @@ final class Filesystem
         return $directories;
     }
 
+    // TODO : il faudrait mettre un mask par défaut pour renvoer d'office l'ensemble des dossiers et fichiers d'un répertoire sous forme de tableau de SplFileInfo. Si on ne modifie pas cette méthode il faudrait créer une méthode ->items($directory, $recursive) pour retourner l'ensemble des items (cad que ca serait une sous méthode de ->directories() et de ->files() mais sans le filtrage sur isFile ou isDir !!!!) 
+    // TODO : il faudrait aussi pouvoir caster le résultat en un typehint 'array' !!!
     public function find(string $directory, string $mask, bool $recursive = true): Traversable
     {
         $regex = $this->toRegEx($mask);
@@ -574,6 +680,7 @@ final class Filesystem
      * @param string[] $ignored
      */
     //https://github.com/contributte/console-extra/blob/master/src/Utils/Files.php#L16
+    // TODO : méthode à virer elle correspond à la méthode deleteDirectory !!!!
     public static function purge(string $dir, array $ignored = []): void
     {
         if (!is_dir($dir) && !mkdir($dir)) {
@@ -596,5 +703,138 @@ final class Filesystem
             }
         }
     }
+
+/*
+    function dirsize($dir)
+    {
+        foreach (glob($dir . "/*") as $f) {
+            $d += is_file($f) ? filesize($f) : dirsize($f);
+        }
+        return round($d / 1024, 3);
+    }
+*/
+
+    /**
+     * Nice formatting for computer sizes (Bytes).
+     *
+     * @param integer|float $bytes    The number in bytes to format
+     * @param integer       $decimals The number of decimal points to include
+     * @return  string
+     */
+    // TODO : fonction à renommer en formatMemory() ou formatSize() ???
+    public static function format($bytes, $decimals = 2): string
+    {
+        $exp = 0;
+        $value = 0;
+        $symbol = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+        $bytes = (float)$bytes;
+
+        if ($bytes > 0) {
+            $exp = floor(log($bytes) / log(1024));
+            $value = ($bytes / (1024 ** floor($exp)));
+        }
+
+        if ($symbol[$exp] === 'B') {
+            $decimals = 0;
+        }
+
+        return number_format($value, $decimals, '.', '') . ' ' . $symbol[$exp];
+    }
+
+    public static function formatMemory(int $memory)
+    {
+        if ($memory >= 1024 * 1024 * 1024) {
+            return sprintf('%.1f GiB', $memory / 1024 / 1024 / 1024);
+        }
+
+        if ($memory >= 1024 * 1024) {
+            return sprintf('%.1f MiB', $memory / 1024 / 1024);
+        }
+
+        if ($memory >= 1024) {
+            return sprintf('%d KiB', $memory / 1024);
+        }
+
+        return sprintf('%d B', $memory);
+    }
+
+
+    /**
+     * Describes memory usage in real-world units. Intended for use
+     * with memory_get_usage, etc.
+     *
+     * @param $bytes
+     *
+     * @return string
+     */
+    public static function describeMemory(int $bytes): string
+    {
+        if ($bytes < 1024)
+        {
+            return $bytes . 'B';
+        }
+        else if ($bytes < 1048576)
+        {
+            return round($bytes / 1024, 2) . 'KB';
+        }
+
+        return round($bytes / 1048576, 2) . 'MB';
+    }
+
+
+
+    /**
+     * Tests for file writability
+     *
+     * is_writable() returns TRUE on Windows servers when you really can't write to
+     * the file, based on the read-only attribute. is_writable() is also unreliable
+     * on Unix servers if safe_mode is on.
+     *
+     * @link https://bugs.php.net/bug.php?id=54709
+     *
+     * @param string $file
+     *
+     * @return boolean
+     *
+     * @throws             \Exception
+     * @codeCoverageIgnore Not practical to test, as travis runs on linux
+     */
+    //https://github.com/codeigniter4/CodeIgniter4/blob/9355f0326ade101fdb9f656c3a0e33f25a1e0fe8/system/Common.php#L615
+    public static function is_really_writable(string $file): bool
+    {
+        // If we're on a Unix server with safe_mode off we call is_writable
+        if (DIRECTORY_SEPARATOR === '/' || ! ini_get('safe_mode'))
+        {
+            return is_writable($file);
+        }
+
+        /* For Windows servers and safe_mode "on" installations we'll actually
+         * write a file then read it. Bah...
+         */
+        if (is_dir($file))
+        {
+            $file = rtrim($file, '/') . '/' . bin2hex(random_bytes(16));
+            if (($fp = @fopen($file, 'ab')) === false)
+            {
+                return false;
+            }
+
+            fclose($fp);
+            @chmod($file, 0777);
+            @unlink($file);
+
+            return true;
+        }
+        elseif (! is_file($file) || ( $fp = @fopen($file, 'ab')) === false)
+        {
+            return false;
+        }
+
+        fclose($fp);
+
+        return true;
+    }
+
 
 }

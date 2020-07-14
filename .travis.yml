@@ -11,8 +11,12 @@ php:
 matrix:
   fast_finish: true
   include:
-    - php: 7.3
-      env: dependencies=lowest
+    # Linux Instances
+    - os: linux
+      dist: xenial
+    # Windows Instances
+    - os: windows
+      language: sh
 
 cache:
   directories:
