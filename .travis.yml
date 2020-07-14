@@ -1,26 +1,26 @@
+#https://github.com/reactphp/event-loop/blob/master/.travis.yml
 language: php
 
-notifications:
-  email:
-    on_success: never
-
-php:
-  - 7.3
-  - 7.4
+# lock distro so new future defaults will not break the build
+dist: xenial
 
 matrix:
   fast_finish: true
   include:
     # Linux Instances
-    - os: linux
-      dist: xenial
+    - php: 7.2
+    - php: 7.3
+    - php: 7.4
     # Windows Instances
-    - os: windows
-      language: sh
-      env:
-        - PHP_VERSION=7.3.8
-        - PHP_DIR=php73
-        - REDIS_EXT=https://windows.php.net/downloads/pecl/releases/redis/5.0.2/php_redis-5.0.2-7.3-nts-vc15-x64.zip
+    - name: "Windows"
+      os: windows
+      language: shell # no built-in php support
+      before_install:
+        - choco install php
+        - choco install composer
+        - export PATH="$(powershell -Command '("Process", "Machine" | % { [Environment]::GetEnvironmentVariable("PATH", $_) -Split ";" -Replace "\\$", "" } | Select -Unique | % { cygpath $_ }) -Join ":"')"
+      install:
+        - composer install
 
 cache:
   directories:
