@@ -17,6 +17,10 @@ matrix:
     # Windows Instances
     - os: windows
       language: sh
+      env:
+        - PHP_VERSION=7.3.8
+        - PHP_DIR=php73
+        - REDIS_EXT=https://windows.php.net/downloads/pecl/releases/redis/5.0.2/php_redis-5.0.2-7.3-nts-vc15-x64.zip
 
 cache:
   directories:
