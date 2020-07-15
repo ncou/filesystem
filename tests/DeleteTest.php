@@ -73,6 +73,83 @@ class DeleteTest extends TestCase
         $this->assertFileNotExists($symlinked);
     }
 
+
+
+
+
+
+
+
+
+    public function testRmdirSymlinkedDirectory()
+    {
+        $basepath = $this->workingDir;
+        $symlinked = $basepath . "/linked";
+        @mkdir($basepath . "/real", 0777, true);
+        touch($basepath . "/real/FILE");
+
+        $result = @symlink($basepath . "/real", $symlinked);
+
+        if (!$result) {
+            $this->markTestSkipped('Symbolic links for directories not supported on this platform');
+        }
+
+        if (!is_dir($symlinked)) {
+            $this->fail('Precondition assertion failed (is_dir is false on symbolic link to directory).');
+        }
+
+        $fs = new Filesystem();
+        $result = $fs->rmdir($symlinked);
+        $this->assertTrue($result);
+        $this->assertFileNotExists($symlinked);
+    }
+
+    public function testRmdirSymlinkedDirectoryWithTrailingSlash()
+    {
+        @mkdir($this->workingDir . "/real", 0777, true);
+        touch($this->workingDir . "/real/FILE");
+        $symlinked = $this->workingDir . "/linked";
+
+        $result = @symlink($this->workingDir . "/real", $symlinked);
+
+        if (!$result) {
+            $this->markTestSkipped('Symbolic links for directories not supported on this platform');
+        }
+
+        if (!is_dir($symlinked)) {
+            $this->fail('Precondition assertion failed (is_dir is false on symbolic link to directory).');
+        }
+
+        $fs = new Filesystem();
+        $result = $fs->rmdir($symlinked . DIRECTORY_SEPARATOR);
+        $this->assertTrue($result);
+        $this->assertFileNotExists($symlinked);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     
     public function testDeleteSymlinkedDirectory()
     {
