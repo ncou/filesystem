@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Chiron\Filesystem;
 
+//https://github.com/thephpleague/flysystem/blob/d13c43dbd4b791f815215959105a008515d1a2e0/src/Util.php
+
 final class Util
 {
     /**
@@ -20,7 +22,7 @@ final class Util
 
 
 
-    
+
 
     /**
      * Nice formatting for computer sizes (Bytes).
