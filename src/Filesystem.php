@@ -233,6 +233,8 @@ final class Filesystem
     //https://github.com/composer/composer/blob/78b8c365cd879ce29016884360d4e61350f0d176/tests/Composer/Test/Util/FilesystemTest.php#L230
     public function deleteDirectory(string $directory, bool $preserve = false): bool
     {
+        $directory = rtrim($directory, '/\\');
+
         if (! $this->isDirectory($directory)) {
             // TODO : lever une exception si ce n'est pas un répertoire ou qu'il n'existe pas ? plutot que de retourner un booléen ?
             return false;
@@ -295,6 +297,8 @@ final class Filesystem
     public function unlink(string $path): bool
     {
         // TODO : il faudrait vérifier que le $path existe bien, sinon lever une notfoundexception !!!!
+
+        $path = rtrim($path, '/\\');
 
         $unlinked = @$this->unlinkImplementation($path);
 

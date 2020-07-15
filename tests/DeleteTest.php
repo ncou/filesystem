@@ -47,6 +47,31 @@ class DeleteTest extends TestCase
 
         $fs = new Filesystem();
         $result = $fs->unlink($symlinked);
+        $this->assertTrue($result);
+        $this->assertFileNotExists($symlinked);
+    }
+
+    public function testUnlinkSymlinkedDirectoryWithTrailingSlash()
+    {
+        @mkdir($this->workingDir . "/real", 0777, true);
+        touch($this->workingDir . "/real/FILE");
+        $symlinked = $this->workingDir . "/linked";
+        $symlinkedTrailingSlash = $symlinked . "/";
+
+        $result = @symlink($this->workingDir . "/real", $symlinked);
+
+        if (!$result) {
+            $this->markTestSkipped('Symbolic links for directories not supported on this platform');
+        }
+
+        if (!is_dir($symlinked)) {
+            $this->fail('Precondition assertion failed (is_dir is false on symbolic link to directory).');
+        }
+
+        $fs = new Filesystem();
+        $result = $fs->unlink($symlinked);
+        $this->assertTrue($result);
+        $this->assertFileNotExists($symlinkedTrailingSlash);
         $this->assertFileNotExists($symlinked);
     }
 
@@ -70,6 +95,7 @@ class DeleteTest extends TestCase
 
         $fs = new Filesystem();
         $result = $fs->deleteDirectory($symlinked);
+        $this->assertTrue($result);
         $this->assertFileNotExists($symlinked);
     }
 
