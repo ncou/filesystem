@@ -233,6 +233,18 @@ final class Filesystem
     //https://github.com/composer/composer/blob/78b8c365cd879ce29016884360d4e61350f0d176/tests/Composer/Test/Util/FilesystemTest.php#L230
     public function deleteDirectory(string $directory, bool $preserve = false): bool
     {
+        // TODO : faire plutot un formalizePath ????
+
+        // Prevent error if the target is a symlink directory path with a trailing slash.
+        $directory = self::trimTrailingSlash($directory);
+
+        // Sanity check
+        // TODO : faire plutot une vérification si le $path est bien un chemin absolu !!!!
+        if ($directory === '') {
+            // Bad programmer! Bad Bad programmer!
+            throw new FilesystemException(__METHOD__ . ': You can not delete a base directory.');
+        }
+
         if (! $this->isDirectory($directory)) {
             // TODO : lever une exception si ce n'est pas un répertoire ou qu'il n'existe pas ? plutot que de retourner un booléen ?
             return false;
@@ -254,9 +266,6 @@ final class Filesystem
 
         // should we "preserve" the current folder ?
         if (! $preserve) {
-            // Prevent error if the directory is a symlink directory path a trailing slash.
-            $directory = rtrim($directory, '/');
-
             if (is_link($directory)) {
                 $this->unlink($directory);
             } else {
@@ -265,6 +274,12 @@ final class Filesystem
         }
 
         return true;
+    }
+
+    // TODO : à déplacer dans la future classe Path::class !!!!
+    public static function trimTrailingSlash(string $path): string
+    {
+        return rtrim($path, '/\\');
     }
 
     /**
@@ -319,6 +334,9 @@ final class Filesystem
      */
     private function unlinkImplementation($path)
     {
+        // Prevent error if the target is a symlink directory path with a trailing slash.
+        $path = self::trimTrailingSlash($path);
+
         if (Util::isWindows() && is_dir($path) && is_link($path)) {
             return rmdir($path);
         }
