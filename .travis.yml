@@ -1,3 +1,4 @@
+#https://github.com/webimpress/safe-writer/blob/master/.travis.yml
 language: php
 
 cache:
@@ -17,6 +18,7 @@ matrix:
       env:
         - PHP_VERSION=7.3.11
         - PHP_DIR=php73
+        - TEST_COVERAGE=true
     - php: 7.2
       env:
         - DEPS=lowest
