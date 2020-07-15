@@ -55,22 +55,22 @@ class DeleteTest extends TestCase
     {
         @mkdir($this->workingDir . "/real", 0777, true);
         touch($this->workingDir . "/real/FILE");
-        $symlinkedTrailingSlash = $this->workingDir . "/linked/";
+        $symlinked = $this->workingDir . "/linked";
 
-        $result = @symlink($this->workingDir . "/real", $symlinkedTrailingSlash);
+        $result = @symlink($this->workingDir . "/real", $symlinked);
 
         if (!$result) {
             $this->markTestSkipped('Symbolic links for directories not supported on this platform');
         }
 
-        if (!is_dir($symlinkedTrailingSlash)) {
+        if (!is_dir($symlinked)) {
             $this->fail('Precondition assertion failed (is_dir is false on symbolic link to directory).');
         }
 
         $fs = new Filesystem();
-        $result = $fs->unlink($symlinkedTrailingSlash);
+        $result = $fs->unlink($symlinked . DIRECTORY_SEPARATOR);
         $this->assertTrue($result);
-        $this->assertFileNotExists($symlinkedTrailingSlash);
+        $this->assertFileNotExists($symlinked);
     }
 
     
@@ -106,23 +106,23 @@ class DeleteTest extends TestCase
     {
         @mkdir($this->workingDir . "/real", 0777, true);
         touch($this->workingDir . "/real/FILE");
-        $symlinkedTrailingSlash = $this->workingDir . "/linked/";
+        $symlinked = $this->workingDir . "/linked";
 
-        $result = @symlink($this->workingDir . "/real", $symlinkedTrailingSlash);
+        $result = @symlink($this->workingDir . "/real", $symlinked);
 
         if (!$result) {
             $this->markTestSkipped('Symbolic links for directories not supported on this platform');
         }
 
-        if (!is_dir($symlinkedTrailingSlash)) {
+        if (!is_dir($symlinked)) {
             $this->fail('Precondition assertion failed (is_dir false w trailing slash).');
         }
 
         $fs = new Filesystem();
 
-        $result = $fs->deleteDirectory($symlinkedTrailingSlash);
+        $result = $fs->deleteDirectory($symlinked . DIRECTORY_SEPARATOR);
         $this->assertTrue($result);
-        $this->assertFileNotExists($symlinkedTrailingSlash);
+        $this->assertFileNotExists($symlinked);
     }
 
 

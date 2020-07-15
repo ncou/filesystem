@@ -254,7 +254,7 @@ final class Filesystem
 
         // should we "preserve" the current folder ?
         if (! $preserve) {
-            // Prevent error if the symlink folder has a trailing slash.
+            // Prevent error if the directory is a symlink directory path a trailing slash.
             $directory = rtrim($directory, '/');
 
             if (is_link($directory)) {
