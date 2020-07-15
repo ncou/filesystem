@@ -18,7 +18,6 @@ matrix:
       env:
         - PHP_VERSION=7.3.11
         - PHP_DIR=php73
-        - TEST_COVERAGE=true
     - php: 7.2
       env:
         - DEPS=lowest
@@ -69,7 +68,7 @@ install:
 
 script:
   - if [[ $TEST_COVERAGE == 'true' ]]; then composer test-coverage ; else composer test ; fi
-  - if [[ $CS_CHECK == 'true' ]]; then composer cs-check ; fi
+  - if [[ $CS_CHECK == 'true' ]]; then composer phpcs ; fi
 
 after_script:
   - if [[ $TEST_COVERAGE == 'true' ]]; then travis_retry php vendor/bin/php-coveralls -v ; fi
