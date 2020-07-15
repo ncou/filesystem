@@ -3,6 +3,8 @@
 This is the catchphrase: what does this project do and how is it unique?
 
 [![Build Status](https://img.shields.io/travis/org/ncou/filesystem/master.svg?style=flat-square)](https://travis-ci.org/ncou/filesystem)
+[![Coverage Status](https://coveralls.io/repos/github/ncou/filesystem/badge.svg?branch=master)](https://coveralls.io/github/ncou/filesystem?branch=master)
+[![CodeCov](https://codecov.io/gh/ncou/filesystem/branch/master/graph/badge.svg)](https://codecov.io/gh/ncou/filesystem)
 [![Latest Version](https://img.shields.io/github/release/chiron/filesystem.svg?style=flat-square)](https://packagist.org/packages/chiron/filesystem)
 [![Total Downloads](https://img.shields.io/packagist/dt/chiron/filesystem.svg?style=flat-square)](https://packagist.org/packages/chiron/filesystem)
 
