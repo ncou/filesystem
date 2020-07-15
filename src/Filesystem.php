@@ -254,8 +254,10 @@ final class Filesystem
 
         // should we "preserve" the current folder ?
         if (! $preserve) {
-            // Trim the trailing slash before using the is_link function, else it will not work correctly !
-            if (is_link(rtrim($directory, '/'))) {
+            // Prevent error if the symlink folder has a trailing slash.
+            $directory = rtrim($directory, '/');
+
+            if (is_link($directory)) {
                 $this->unlink($directory);
             } else {
                 $this->rmdir($directory);
