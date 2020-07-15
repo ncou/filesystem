@@ -234,16 +234,17 @@ final class Filesystem
     public function deleteDirectory(string $directory, bool $preserve = false): bool
     {
         // TODO : faire plutot un formalizePath ????
-
         // Prevent error if the target is a symlink directory path with a trailing slash.
+        // TODO : attention il faut gérer le cas ou il y a un path qui est uniquement un seul slash ou antislash. exemple: $path = '/' ou './'
         $directory = self::trimTrailingSlash($directory);
 
         // Sanity check
         // TODO : faire plutot une vérification si le $path est bien un chemin absolu !!!!
+        /*
         if ($directory === '') {
             // Bad programmer! Bad Bad programmer!
             throw new FilesystemException(__METHOD__ . ': You can not delete a base directory.');
-        }
+        }*/
 
         if (! $this->isDirectory($directory)) {
             // TODO : lever une exception si ce n'est pas un répertoire ou qu'il n'existe pas ? plutot que de retourner un booléen ?
@@ -274,12 +275,6 @@ final class Filesystem
         }
 
         return true;
-    }
-
-    // TODO : à déplacer dans la future classe Path::class !!!!
-    public static function trimTrailingSlash(string $path): string
-    {
-        return rtrim($path, '/\\');
     }
 
     /**
@@ -342,6 +337,34 @@ final class Filesystem
         }
 
         return unlink($path);
+    }
+
+    // TODO : à déplacer dans la future classe Path::class !!!!
+    public static function trimTrailingSlash(string $path): string
+    {
+        // TODO : attention il faut gérer le cas ou il y a un path qui est uniquement un seul slash ou antislash. exemple: $path = '/'
+        return rtrim($path, '/\\');
+    }
+
+    /**
+     * Normalizes given directory names by removing trailing slashes.
+     *
+     * Excluding: (s)ftp:// or ssh2.(s)ftp:// wrapper
+     */
+    // TODO : utiliser la méthode normalizeDir plutot que trimTrailingSlash ????
+    private function normalizeDir(string $dir): string
+    {
+        if ('/' === $dir) {
+            return $dir;
+        }
+
+        $dir = rtrim($dir, '/'. DIRECTORY_SEPARATOR);
+
+        if (preg_match('#^(ssh2\.)?s?ftp://#', $dir)) {
+            $dir .= '/';
+        }
+
+        return $dir;
     }
 
 
@@ -793,10 +816,11 @@ final class Filesystem
      */
     //https://github.com/contributte/console-extra/blob/master/src/Utils/Files.php#L16
     // TODO : méthode à virer elle correspond à la méthode deleteDirectory !!!!
+    /*
     public static function purge(string $dir, array $ignored = []): void
     {
         if (!is_dir($dir) && !mkdir($dir)) {
-            throw new RuntimeException(sprintf('Directory "%s" was not created', $dir));
+            throw new \RuntimeException(sprintf('Directory "%s" was not created', $dir));
         }
 
         $iterator = new RecursiveIteratorIterator(
@@ -804,7 +828,6 @@ final class Filesystem
             RecursiveIteratorIterator::CHILD_FIRST
         );
 
-        /** @var SplFileObject $entry */
         foreach ($iterator as $entry) {
             if (!in_array(str_replace('\\', '/', (string) $entry->getRealPath()), $ignored, true)) {
                 if ($entry->isDir()) {
@@ -814,7 +837,7 @@ final class Filesystem
                 }
             }
         }
-    }
+    }*/
 
 /*
     function dirsize($dir)
