@@ -252,18 +252,14 @@ final class Filesystem
             }
         }
 
+        // should we "preserve" the current folder ?
         if (! $preserve) {
-            $this->rmdir($directory);
+            if (is_link($directory)) {
+                $this->unlink($directory);
+            } else {
+                $this->rmdir($directory);
+            }
         }
-
-/*
-// TODO : gérer le cas ou le répertoire à supprimer est un lien symbolique (à tester sous linux et windows !!!!)
-        if (is_link($directory)) {
-            self::unlink($directory);
-        } else {
-            rmdir($directory);
-        }
-*/
 
         return true;
     }

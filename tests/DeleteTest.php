@@ -20,8 +20,8 @@ class DeleteTest extends TestCase
 
     public function setUp(): void
     {
-        //$this->workingDir = self::getUniqueTmpDirectory();
-        $this->workingDir = __DIR__ . '/temp';
+        $this->workingDir = self::getUniqueTmpDirectory();
+        //$this->workingDir = __DIR__ . '/temp';
     }
 
     /**
@@ -183,7 +183,7 @@ class DeleteTest extends TestCase
                 if (isset($content[0], $content[1]) && $content[0] === 'symlink') {
                     symlink($basePath . '/' . $content[1], $itemName);
                 } else {
-                    mkdir($itemName, 0777, true);
+                    @mkdir($itemName, 0777, true);
                     $this->createFileStructure($content, $itemName);
                 }
             } else {
