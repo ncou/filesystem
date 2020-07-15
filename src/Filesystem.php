@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Chiron\Boot;
+namespace Chiron\Filesystem;
 
-use Chiron\Boot\Exception\FileNotFoundException;
+use Chiron\Filesystem\Exception\FileNotFoundException;
+use Chiron\Filesystem\Exception\FilesystemException;
 
 use EmptyIterator;
 use FilesystemIterator;
@@ -215,6 +216,10 @@ final class Filesystem
      *
      * The directory itself may be optionally preserved.
      *
+     * Uses a CHILD_FIRST RecursiveIteratorIterator to sort files
+     * before directories, creating a single non-recursive loop
+     * to delete files/directories in the correct order.
+     *
      * @param  string  $directory
      * @param  bool  $preserve
      * @return bool
@@ -224,33 +229,105 @@ final class Filesystem
     //https://github.com/spiral/files/blob/master/src/Files.php#L176
     //https://github.com/composer/composer/blob/2285a79c6302576dec07c9bb8b52d24e6b4e8015/src/Composer/Util/Filesystem.php#L150
     //https://github.com/nette/utils/blob/master/src/Utils/FileSystem.php#L72
+    //https://github.com/ventoviro/windwalker-filesystem/blob/master/Folder.php#L180
+    //https://github.com/composer/composer/blob/78b8c365cd879ce29016884360d4e61350f0d176/tests/Composer/Test/Util/FilesystemTest.php#L230
     public function deleteDirectory(string $directory, bool $preserve = false): bool
     {
         if (! $this->isDirectory($directory)) {
             // TODO : lever une exception si ce n'est pas un répertoire ou qu'il n'existe pas ? plutot que de retourner un booléen ?
             return false;
         }
-
-        //$items = new FilesystemIterator($directory);
+        
+        // TODO : code à factoriser dans la méthode createIterator()
         $items = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($directory, \RecursiveDirectoryIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::CHILD_FIRST
         );
 
         foreach ($items as $item) {
-            if ($item->isDir() && ! $item->isLink()) {
-                rmdir($item->getRealPath());
+            if ($item->isFile() || $item->isLink()) {
+                $this->unlink($item->getPathname());
             } else {
-                unlink($item->getRealPath());
+                $this->rmdir($item->getPathname());
             }
         }
 
         if (! $preserve) {
+            $this->rmdir($directory);
+        }
+
+/*
+// TODO : gérer le cas ou le répertoire à supprimer est un lien symbolique (à tester sous linux et windows !!!!)
+        if (is_link($directory)) {
+            self::unlink($directory);
+        } else {
             rmdir($directory);
+        }
+*/
+
+        return true;
+    }
+
+    /**
+     * Attempts to rmdir a file
+     *
+     * @param  string            $path
+     * @throws FilesystemException
+     * @return bool
+     */
+    public function rmdir(string $path): bool
+    {
+        // TODO : il faudrait vérifier que le $path existe bien, sinon lever une notfoundexception !!!!
+
+        $deleted = @rmdir($path);
+
+        if (!$deleted) {
+            $error = error_get_last();
+            throw new FilesystemException($error['message'], $error['type']);
         }
 
         return true;
     }
+
+    /**
+     * Attempts to unlink a file
+     *
+     * @param  string            $path
+     * @throws FilesystemException
+     * @return bool
+     */
+    public function unlink(string $path): bool
+    {
+        // TODO : il faudrait vérifier que le $path existe bien, sinon lever une notfoundexception !!!!
+
+        $unlinked = @$this->unlinkImplementation($path);
+
+        if (!$unlinked) {
+            $error = error_get_last();
+            throw new FilesystemException($error['message'], $error['type']);
+        }
+
+        return true;
+    }
+
+    /**
+     * delete symbolic link implementation (commonly known as "unlink()")
+     *
+     * symbolic links on windows which link to directories need rmdir instead of unlink
+     *
+     * @param string $path
+     *
+     * @return bool
+     */
+    private function unlinkImplementation($path)
+    {
+        if (Util::isWindows() && is_dir($path) && is_link($path)) {
+            return rmdir($path);
+        }
+
+        return unlink($path);
+    }
+
 
 
 
@@ -546,7 +623,7 @@ final class Filesystem
      */
     public function files(string $directory, bool $recursive = true): Traversable
     {
-        $iterator = $this->buildIterator($directory, $recursive);
+        $iterator = $this->createIterator($directory, $recursive);
 
         $files = new CallbackFilterIterator($iterator, function (SplFileInfo $item) {
             return $item->isFile();
@@ -565,7 +642,7 @@ final class Filesystem
      */
     public function directories(string $directory, bool $recursive = true): Traversable
     {
-        $iterator = $this->buildIterator($directory, $recursive);
+        $iterator = $this->createIterator($directory, $recursive);
 
         $directories = new CallbackFilterIterator($iterator, function (SplFileInfo $item) {
             return $item->isDir();
@@ -579,7 +656,7 @@ final class Filesystem
     public function find(string $directory, string $mask, bool $recursive = true): Traversable
     {
         $regex = $this->toRegEx($mask);
-        $iterator = $this->buildIterator($directory, $recursive);
+        $iterator = $this->createIterator($directory, $recursive);
 
         $finder = new CallbackFilterIterator($iterator, function (SplFileInfo $item) use ($regex, $iterator) {
             return $regex === null || preg_match($regex, '/' . strtr($iterator->getSubPathName(), '\\', '/'));
@@ -619,7 +696,7 @@ final class Filesystem
      *
      * @return Iterator<string, \SplFileInfo>
      */
-    private function buildIterator(string $directory, bool $recursive): Iterator 
+    private function createIterator(string $directory, bool $recursive): Iterator 
     {
         if (! $this->isDirectory($directory)) {
             return new EmptyIterator();
@@ -633,6 +710,25 @@ final class Filesystem
         }
 
         return $iterator;
+    }
+
+    /**
+     * iteratorToArray
+     *@see https://github.com/symfony/symfony/issues/6460
+     *
+     * @param \Traversable $iterator
+     *
+     * @return  array
+     */
+    public static function iteratorToArray(\Traversable $iterator)
+    {
+        $array = [];
+
+        foreach ($iterator as $key => $file) {
+            $array[] = (string) $file;
+        }
+
+        return $array;
     }
 
 
@@ -714,73 +810,7 @@ final class Filesystem
     }
 */
 
-    /**
-     * Nice formatting for computer sizes (Bytes).
-     *
-     * @param integer|float $bytes    The number in bytes to format
-     * @param integer       $decimals The number of decimal points to include
-     * @return  string
-     */
-    // TODO : fonction à renommer en formatMemory() ou formatSize() ???
-    public static function format($bytes, $decimals = 2): string
-    {
-        $exp = 0;
-        $value = 0;
-        $symbol = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-
-        $bytes = (float)$bytes;
-
-        if ($bytes > 0) {
-            $exp = floor(log($bytes) / log(1024));
-            $value = ($bytes / (1024 ** floor($exp)));
-        }
-
-        if ($symbol[$exp] === 'B') {
-            $decimals = 0;
-        }
-
-        return number_format($value, $decimals, '.', '') . ' ' . $symbol[$exp];
-    }
-
-    public static function formatMemory(int $memory)
-    {
-        if ($memory >= 1024 * 1024 * 1024) {
-            return sprintf('%.1f GiB', $memory / 1024 / 1024 / 1024);
-        }
-
-        if ($memory >= 1024 * 1024) {
-            return sprintf('%.1f MiB', $memory / 1024 / 1024);
-        }
-
-        if ($memory >= 1024) {
-            return sprintf('%d KiB', $memory / 1024);
-        }
-
-        return sprintf('%d B', $memory);
-    }
-
-
-    /**
-     * Describes memory usage in real-world units. Intended for use
-     * with memory_get_usage, etc.
-     *
-     * @param $bytes
-     *
-     * @return string
-     */
-    public static function describeMemory(int $bytes): string
-    {
-        if ($bytes < 1024)
-        {
-            return $bytes . 'B';
-        }
-        else if ($bytes < 1048576)
-        {
-            return round($bytes / 1024, 2) . 'KB';
-        }
-
-        return round($bytes / 1048576, 2) . 'MB';
-    }
+    
 
 
 

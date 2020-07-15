@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Chiron\Boot\Exception;
+namespace Chiron\Filesystem\Exception;
 
 /**
  * When trying to access missing file.
  */
-class FileNotFoundException extends \RuntimeException
+class FileNotFoundException extends FilesystemException
 {
     /**
      * @param string $path

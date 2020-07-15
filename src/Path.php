@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Chiron\Boot;
+namespace Chiron\Filesystem;
 
 final class Path
 {

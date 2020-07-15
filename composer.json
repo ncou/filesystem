@@ -7,12 +7,12 @@
     "type": "library",
     "autoload": {
         "psr-4": {
-            "Chiron\\Boot\\": "src"
+            "Chiron\\Filesystem\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Chiron\\Tests\\Boot\\": "tests"
+            "Chiron\\Tests\\Filesystem\\": "tests"
         }
     },
     "require": {
