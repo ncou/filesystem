@@ -692,6 +692,7 @@ final class Filesystem
 
     // TODO : il faudrait mettre un mask par défaut pour renvoer d'office l'ensemble des dossiers et fichiers d'un répertoire sous forme de tableau de SplFileInfo. Si on ne modifie pas cette méthode il faudrait créer une méthode ->items($directory, $recursive) pour retourner l'ensemble des items (cad que ca serait une sous méthode de ->directories() et de ->files() mais sans le filtrage sur isFile ou isDir !!!!) 
     // TODO : il faudrait aussi pouvoir caster le résultat en un typehint 'array' !!!
+    // TODO : on devrait permettre de passer une chaine vide pour le mask ? non ? donc le typehint passerai à "?string"
     public function find(string $directory, string $mask, bool $recursive = true): Traversable
     {
         $regex = $this->toRegEx($mask);
@@ -735,12 +736,15 @@ final class Filesystem
      *
      * @return Iterator<string, \SplFileInfo>
      */
+    // TODO : à déplacer dans la classe Util ?
     private function createIterator(string $directory, bool $recursive): Iterator 
     {
+        // TODO : vérifier si cela gére bien le cas du $directory vide et du $directory qui ne peut pas être ouvert, car sinon on ava avoir une RuntimeException si le path est vide, et une Unexpected ValueException si le chemin ne peut pas être ouvert !!!!  https://www.php.net/manual/fr/directoryiterator.construct.php
         if (! $this->isDirectory($directory)) {
             return new EmptyIterator();
         }
 
+        // TODO : il faudrait faire un catch de l'erreur Throwable et la transformer en FilesystemException. Cela peut arriver si le chemin ne peut pas être ouvert (je suppose si il n'existepas ou si il est inaccessible en terme de droits)
         $flags = FilesystemIterator::FOLLOW_SYMLINKS | FilesystemIterator::SKIP_DOTS;
         $iterator = new RecursiveDirectoryIterator($directory, $flags);
 
@@ -749,7 +753,28 @@ final class Filesystem
         }
 
         return $iterator;
+
+
+
+/*
+        try {
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::SELF_FIRST
+            );
+        } catch (UnexpectedValueException $exception) {
+            throw new RuntimeException($exception->getMessage());
+        }
+*/
+
+
+
+
+
+
     }
+
+
 
     /**
      * iteratorToArray
@@ -759,6 +784,7 @@ final class Filesystem
      *
      * @return  array
      */
+    // TODO : à déplacer dans la classe Util ?
     public static function iteratorToArray(\Traversable $iterator)
     {
         $array = [];

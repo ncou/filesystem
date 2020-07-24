@@ -11,6 +11,7 @@ final class Util
     /**
      * @return bool Whether the host machine is running a Windows OS
      */
+    // TODO : créer une function.php "is_windows()" pour permettre d'utiliser le code ci dessous de maniére autonome !!!!
     public static function isWindows()
     {
         return strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
