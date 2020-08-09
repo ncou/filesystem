@@ -94,4 +94,28 @@ final class Util
     }
 
 
+
+    /**
+     * Returns the last occurred PHP error or an empty string if no error occurred. Unlike error_get_last(),
+     * it is nit affected by the PHP directive html_errors and always returns text, not HTML.
+     */
+    //https://github.com/nette/utils/blob/3a8845d662985b202594ae62b93e0f0c2dc95154/src/Utils/Helpers.php#L35
+    public static function getLastError(): string
+    {
+        $message = error_get_last()['message'] ?? '';
+        $message = ini_get('html_errors') ? static::htmlToText($message) : $message;
+        $message = preg_replace('#^\w+\(.*?\): #', '', $message);
+        return $message;
+    }
+
+    /**
+     * Converts given HTML code to plain text.
+     */
+    //https://github.com/nette/utils/blob/3a8845d662985b202594ae62b93e0f0c2dc95154/src/Utils/Html.php#L327
+    public static function htmlToText(string $html): string
+    {
+        return html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    }
+
+
 }

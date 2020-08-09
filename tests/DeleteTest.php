@@ -11,6 +11,8 @@ use LogicException;
 use PHPUnit\Framework\TestCase;
 use Traversable;
 
+// TODO : gérer le cas ou on n'a pas les droits pour faire un symlink et qu'on recois une erreur "1314" !!!!  https://github.com/symfony/filesystem/blob/e7550993849f986f01a9161b302d4aed8d4aab0a/Tests/FilesystemTestCase.php#L43
+
 class DeleteTest extends TestCase
 {
     /**
@@ -208,30 +210,6 @@ class DeleteTest extends TestCase
             }
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

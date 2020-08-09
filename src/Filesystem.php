@@ -60,42 +60,49 @@ final class Filesystem
     /**
      * Determine if the given path is a file.
      *
-     * @param string $filename
+     * @param string $path
      *
      * @return bool
      */
-    public function isFile(string $filename): bool
+    public function isFile(string $path): bool
     {
-        return is_file($filename);
+        return is_file($path);
     }
 
     /**
      * Determine if the given path is a directory.
      *
-     * @param string $filename
+     * @param string $path
      *
      * @return bool
      */
-    public function isDirectory(string $filename): bool
+    public function isDirectory(string $path): bool
     {
-        return is_dir($filename);
+        return is_dir($path);
     }
 
-    public function exists(string $filename): bool
+    /**
+     * Determine if a file or directory exists.
+     *
+     * @param string $path
+     *
+     * @return bool
+     */
+    public function exists(string $path): bool
     {
-        return file_exists($filename);
+        return file_exists($path);
     }
 
     /**
      * Determine if a file or directory is missing.
      *
-     * @param string $filename
+     * @param string $path
      *
      * @return bool
      */
-    public function missing(string $filename): bool
+    public function missing(string $path): bool
     {
-        return ! $this->exists($filename);
+        return $this->exists($path) === false;
     }
 
     public function read(string $filename): string
@@ -183,13 +190,151 @@ final class Filesystem
         return pathinfo($filename, PATHINFO_EXTENSION);
     }
 
+
+
+    /**
+     * Write the contents of a file.
+     *
+     * @param  string  $filename
+     * @param  string  $content
+     * @param  bool  $lock
+     * @return int|bool
+     */
+    // TODO : voir si on conserve cette fonction !!! et lui ajouter des tests !!!   https://github.com/illuminate/filesystem/blob/master/Filesystem.php#L155
+    public function write(string $filename, string $content, bool $lock = false)
+    {
+        return file_put_contents($filename, $content, $lock ? LOCK_EX : 0);
+    }
+
+
+    /**
+     * Atomically write content into a file.
+     *
+     * @param string $content The data to write into the file
+     *
+     * @throws FilesystemException if the file cannot be written to
+     */
+    // TODO : créer des tests en utilisant comme exemple les tests : https://github.com/symfony/filesystem/blob/master/Filesystem.php#L641 + https://github.com/symfony/filesystem/blob/e7550993849f986f01a9161b302d4aed8d4aab0a/Tests/FilesystemTest.php#L1541
+    public function replace(string $filename, string $content): void
+    {
+        $dir = dirname($filename);
+
+        if (! is_dir($dir)) {
+            $this->makeDirectory($dir);
+        }
+
+        if (! is_writable($dir)) {
+            throw new FilesystemException(sprintf('Unable to write to the "%s" directory.', $dir));
+        }
+
+        // Will create a temp file with 0600 access rights when the filesystem supports chmod.
+        $tmpFile = $this->tempnam($dir, basename($filename));
+
+        if (false === @file_put_contents($tmpFile, $content)) {
+            throw new FilesystemException(sprintf('Failed to write file "%s".', $filename));
+        }
+
+        @chmod($tmpFile, file_exists($filename) ? fileperms($filename) : 0666 & ~umask());
+
+        // rename temporary file and will overwrite existing file.
+        $this->rename($tmpFile, $filename, true);
+    }
+
+
+
+    /**
+     * Creates a temporary file.
+     *
+     * @param string $prefix The prefix of the generated temporary filename
+     *                       Note: Windows uses only the first three characters of prefix
+     * @param string $suffix The suffix of the generated temporary filename
+     *
+     * @throws FilesystemException if the tempory file cannot be created
+     *
+     * @return string The new temporary filename (with path), or throw an exception on failure
+     */
+    public function tempnam(string $dir, string $prefix): string
+    {
+        $tmpFile = @tempnam($dir, $prefix);
+
+        // If tempnam failed or no scheme return the filename otherwise prepend the scheme
+        if ($tmpFile === false) {
+            throw new FilesystemException('A temporary file could not be created.');
+        }
+
+        return $tmpFile;
+    }
+
+    /**
+     * Renames a file or a directory.
+     *
+     * @throws FilesystemException When target file or directory already exists
+     * @throws FilesystemException When origin cannot be renamed
+     */
+    // TODO : renommer en renameFile()
+    public function rename(string $origin, string $target, bool $overwrite = false): void
+    {
+
+        // TODO : faire une vérification si le $origin est un répertoire (is_dir) il faut lever une exception car la fonction rename fonctionne uniquement pour les fichiers et pas les dossiers !!!!
+
+        // TODO : on devrait pas plutot effectuer un test sur exist() ???? au lieu de isReadeable ????
+        // we check that target does not exist
+        //if (! $overwrite && $this->isReadable($target)) {
+        if (! $overwrite && is_readable($target)) {
+            throw new FilesystemException(sprintf('Cannot rename because the target "%s" already exists.', $target));
+        }
+
+        if (@rename($origin, $target) === false) {
+            /*
+            if (is_dir($origin)) {
+                // See https://bugs.php.net/54097 & https://php.net/rename#113943
+                $this->mirror($origin, $target, null, ['override' => $overwrite, 'delete' => $overwrite]);
+                $this->remove($origin);
+
+                return;
+            }
+            */
+
+            throw new FilesystemException(sprintf('Cannot rename "%s" to "%s".', $origin, $target));
+        }
+    }
+
+    /**
+     * Tells whether a file exists and is readable.
+     */
+    // TODO : il faudrait pas vérifier qu'on passe bien en paramétre un fichier ????
+    // TODO : voir si on conserve cette fonction !!!!
+    /*
+    public function isReadable(string $filename): bool
+    {
+        return is_readable($filename);
+    }*/
+
+    /**
+     * Tells whether a file exists and is writable.
+     */
+    // TODO : il faudrait pas vérifier qu'on passe bien en paramétre un fichier ????
+    // TODO : voir si on conserve cette fonction !!!!
+    /*
+    public function isWritable(string $filename): bool
+    {
+        return is_writable($filename);
+    }*/
+
+
+
+
+
+
+
     /**
      * Write the contents of a file, replacing it atomically if it already exists.
      *
      * @param string $path
      * @param string $content
      */
-    public function write(string $path, string $content): void
+    /*
+    public function write_SAVE(string $path, string $content): void
     {
         // If the path already exists and is a symlink, get the real path...
         clearstatcache(true, $path);
@@ -204,7 +349,7 @@ final class Filesystem
         file_put_contents($tempPath, $content);
 
         rename($tempPath, $path);
-    }
+    }*/
 
 
 
@@ -245,6 +390,7 @@ final class Filesystem
             // Bad programmer! Bad Bad programmer!
             throw new FilesystemException(__METHOD__ . ': You can not delete a base directory.');
         }*/
+
 
         if (! $this->isDirectory($directory)) {
             // TODO : lever une exception si ce n'est pas un répertoire ou qu'il n'existe pas ? plutot que de retourner un booléen ?
@@ -305,6 +451,7 @@ final class Filesystem
      * @throws FilesystemException
      * @return bool
      */
+    // TODO : utiliser plutot un typehint "void" pour le retour car cette fonction ne pourra jamais retourner false car on lévera une exception dans ce cas là. Eventuellemment regarder en utilisant un @ quelle est la valeur de retour
     public function unlink(string $path): bool
     {
         // TODO : il faudrait vérifier que le $path existe bien, sinon lever une notfoundexception !!!!
@@ -312,6 +459,12 @@ final class Filesystem
 
         if (!$unlinked) {
             $error = error_get_last();
+
+            // TODO : corriger le cas ou le fichier n'existe pas car la méthode unlinkimplementation va retourner false mais sans qu'il n'y ait d'erreurs donc le error_get_last retournera null. Pour l'instnat on ajoute un fix temporaire. Exemple : https://github.com/nette/utils/blob/master/src/Utils/FileSystem.php#L78
+            if ($error === null) {
+                $error = ['message' => 'Unlink failed', 'type' => 0];
+            }
+
             throw new FilesystemException($error['message'], $error['type']);
         }
 
@@ -448,8 +601,11 @@ final class Filesystem
      * @param  bool  $recursive
      * @return bool
      */
-    public function makeDirectory(string $path, int $mode = 0755, bool $recursive = false): bool
+    // TODO : renomme la fonction en mkdir() ???
+    // TODO : virer le dernier paramétre et toujours le laisser à true ????
+    public function makeDirectory(string $path, int $mode = 0755, bool $recursive = true): bool
     {
+        // TODO : retourner une exception si la valeur de retour du mkdir est à FALSE !!!!
         return mkdir($path, $mode, $recursive);
     }
 
