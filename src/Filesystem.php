@@ -603,11 +603,32 @@ final class Filesystem
      */
     // TODO : renomme la fonction en mkdir() ???
     // TODO : virer le dernier paramétre et toujours le laisser à true ????
+    // TODO : créer une méthode 'ensureDirectoryExists()' qui appellera la méthode makeDirectory si nécessaire !!! https://github.com/illuminate/filesystem/blob/master/Filesystem.php#L559
     public function makeDirectory(string $path, int $mode = 0755, bool $recursive = true): bool
     {
         // TODO : retourner une exception si la valeur de retour du mkdir est à FALSE !!!!
         return mkdir($path, $mode, $recursive);
     }
+
+    /**
+     * Ensure a directory exists.
+     *
+     * @param  string  $path
+     * @param  int  $mode
+     * @param  bool  $recursive
+     * @return void
+     */
+    // https://github.com/illuminate/filesystem/blob/master/Filesystem.php#L559
+    /*
+    public function ensureDirectoryExists(string $path, int $mode = 0755, bool $recursive = true): void
+    {
+        if (! $this->isDirectory($path)) {
+            $this->makeDirectory($path, $mode, $recursive);
+        }
+    }*
+
+
+
 
     /**
      * Joins all given path segments then normalizes the resulting path.

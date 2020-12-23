@@ -14,6 +14,6 @@ class FileNotFoundException extends FilesystemException
      */
     public function __construct($path)
     {
-        parent::__construct("File does not exist at path {$path}");
+        parent::__construct("File does not exist at path {$path}.");
     }
 }
