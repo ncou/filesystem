@@ -619,15 +619,12 @@ final class Filesystem
      * @return void
      */
     // https://github.com/illuminate/filesystem/blob/master/Filesystem.php#L559
-    /*
     public function ensureDirectoryExists(string $path, int $mode = 0755, bool $recursive = true): void
     {
         if (! $this->isDirectory($path)) {
             $this->makeDirectory($path, $mode, $recursive);
         }
-    }*
-
-
+    }
 
 
     /**
