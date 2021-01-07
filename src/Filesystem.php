@@ -619,6 +619,7 @@ final class Filesystem
      * @return void
      */
     // https://github.com/illuminate/filesystem/blob/master/Filesystem.php#L559
+    // TODO : il faudrait que cette méthode retourne un booléen pour savoir si la création du répertoire à bien fonctionnée !!!
     public function ensureDirectoryExists(string $path, int $mode = 0755, bool $recursive = true): void
     {
         if (! $this->isDirectory($path)) {
