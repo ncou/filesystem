@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Chiron\Filesystem;
 
+//https://github.com/webmozart/path-util/blob/master/src/Path.php
+
 final class Path
 {
 

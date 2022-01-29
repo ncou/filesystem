@@ -17,6 +17,9 @@ use CallbackFilterIterator;
 use SplFileInfo;
 use RegexIterator;
 use RecursiveRegexIterator;
+use LogicException;
+
+//https://github.com/webmozart/path-util/blob/master/src/Path.php
 
 //https://github.com/codeigniter4/CodeIgniter4/blob/c3e545d9f2a25c61031a65ff6ed25466f1a6a278/system/Helpers/filesystem_helper.php
 
@@ -133,6 +136,7 @@ final class Filesystem
     }
 
     // TODO : améliorer la copie en utilisant cette fonction qui supporte la copie de répertoires : https://github.com/composer/composer/blob/2285a79c6302576dec07c9bb8b52d24e6b4e8015/src/Composer/Util/Filesystem.php#L283
+    /*
     public function copy(string $filename, string $destination): bool
     {
         if ($this->exists($filename)) {
@@ -140,6 +144,37 @@ final class Filesystem
         }
 
         throw new FileNotFoundException($filename);
+    }*/
+
+    /**
+     * Copies a file or directory from $source to $target.
+     *
+     * @param string $source
+     * @param string $target
+     * @return bool
+     */
+    public function copy(string $source, string $target): bool
+    {
+        if (!is_dir($source)) {
+            return copy($source, $target);
+        }
+
+        // TODO : utiliser la méthode createIterator pour mutualiser le code ????
+        $it = new RecursiveDirectoryIterator($source, RecursiveDirectoryIterator::SKIP_DOTS);
+        $ri = new RecursiveIteratorIterator($it, RecursiveIteratorIterator::SELF_FIRST);
+        $this->ensureDirectoryExists($target);
+
+        $result = true;
+        foreach ($ri as $file) {
+            $targetPath = $target . DIRECTORY_SEPARATOR . $ri->getSubPathName();
+            if ($file->isDir()) {
+                $this->ensureDirectoryExists($targetPath);
+            } else {
+                $result = $result && copy($file->getPathname(), $targetPath);
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -627,6 +662,66 @@ final class Filesystem
             $this->makeDirectory($path, $mode, $recursive);
         }
     }
+
+
+    /**
+     * Returns the last modification time for the given paths.
+     *
+     * If the path is a directory, any nested files/directories will be checked as well.
+     *
+     * @param string ...$paths The directories to be checked.
+     *
+     * @throws LogicException If path is not set.
+     *
+     * @return int Unix timestamp representing the last modification time.
+     */
+    public function lastModifiedTime(string ...$paths): int
+    {
+        // TODO : utiliser la methode exists() pour vérifier si le path est correcte, si ce n'est pas le cas lever une FileNotFoundException, attention aussi à vérifier que le variadic est bien passé en paramétre et pas une chaine/tableau vide !!!!
+        if (empty($paths)) {
+            throw new LogicException('Path is required.');
+        }
+
+        $times = [];
+
+        foreach ($paths as $path) {
+            $times[] = $this->modifiedTime($path);
+
+            if (is_file($path)) {
+                continue;
+            }
+
+            // TODO : voir si on peut utiliser createIterator() histoire de mutualiser le code !!!
+            /** @var iterable<string, string> $iterator */
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::SELF_FIRST
+            );
+
+            foreach ($iterator as $p => $_info) {
+                $times[] = $this->modifiedTime($p);
+            }
+        }
+
+        /** @psalm-suppress ArgumentTypeCoercion */
+        return max($times);
+    }
+
+
+
+
+    /**
+     * Get the file's last modification time.
+     *
+     * @param  string  $path
+     * @return int
+     */
+    public function modifiedTime(string $path): int
+    {
+        return filemtime($path);
+    }
+
+
 
 
     /**
