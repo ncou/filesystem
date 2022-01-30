@@ -34,5 +34,10 @@
         "phpcs": "phpcs src",
         "phpcs-fix": "phpcbf src",
         "test-coverage": "phpunit --coverage-clover clover.xml"
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
     }
 }

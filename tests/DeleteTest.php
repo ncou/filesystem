@@ -50,7 +50,7 @@ class DeleteTest extends TestCase
         $fs = new Filesystem();
         $result = $fs->unlink($symlinked);
         $this->assertTrue($result);
-        $this->assertFileNotExists($symlinked);
+        $this->assertFileDoesNotExist($symlinked);
     }
 
     public function testUnlinkSymlinkedDirectoryWithTrailingSlash()
@@ -72,7 +72,7 @@ class DeleteTest extends TestCase
         $fs = new Filesystem();
         $result = $fs->unlink($symlinked . DIRECTORY_SEPARATOR);
         $this->assertTrue($result);
-        $this->assertFileNotExists($symlinked);
+        $this->assertFileDoesNotExist($symlinked);
     }
     
     public function testDeleteSymlinkedDirectory()
@@ -95,7 +95,7 @@ class DeleteTest extends TestCase
         $fs = new Filesystem();
         $result = $fs->deleteDirectory($symlinked);
         $this->assertTrue($result);
-        $this->assertFileNotExists($symlinked);
+        $this->assertFileDoesNotExist($symlinked);
     }
 
 
@@ -123,7 +123,7 @@ class DeleteTest extends TestCase
 
         $result = $fs->deleteDirectory($symlinked . DIRECTORY_SEPARATOR);
         $this->assertTrue($result);
-        $this->assertFileNotExists($symlinked);
+        $this->assertFileDoesNotExist($symlinked);
     }
 
 
@@ -171,11 +171,11 @@ class DeleteTest extends TestCase
         $this->assertFileExists($basePath . 'file');
         $this->assertDirectoryExists($basePath . 'directory');
         $this->assertFileExists($basePath . 'directory/standard-file-1'); // symlinked directory still have it's file
-        $this->assertDirectoryNotExists($basePath . 'symlinks');
-        $this->assertFileNotExists($basePath . 'symlinks/standard-file-2');
-        $this->assertFileNotExists($basePath . 'symlinks/symlinked-file');
-        $this->assertDirectoryNotExists($basePath . 'symlinks/symlinked-directory');
-        $this->assertFileNotExists($basePath . 'symlinks/symlinked-directory/standard-file-1');
+        $this->assertDirectoryDoesNotExist($basePath . 'symlinks');
+        $this->assertFileDoesNotExist($basePath . 'symlinks/standard-file-2');
+        $this->assertFileDoesNotExist($basePath . 'symlinks/symlinked-file');
+        $this->assertDirectoryDoesNotExist($basePath . 'symlinks/symlinked-directory');
+        $this->assertFileDoesNotExist($basePath . 'symlinks/symlinked-directory/standard-file-1');
     }
 
 
