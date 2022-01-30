@@ -11,6 +11,8 @@ use LogicException;
 use PHPUnit\Framework\TestCase;
 use Traversable;
 
+//https://github.com/yiisoft/files/blob/7e5b57feeea6058e0290e96d960b65f08055a338/tests/FileSystemTestCase.php#L11
+//https://github.com/composer/composer/blob/2285a79c6302576dec07c9bb8b52d24e6b4e8015/tests/Composer/Test/TestCase.php
 
 class CopyTest extends TestCase
 {

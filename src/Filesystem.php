@@ -685,7 +685,7 @@ final class Filesystem
         $times = [];
 
         foreach ($paths as $path) {
-            $times[] = $this->modifiedTime($path);
+            $times[] = filemtime($path);
 
             if (is_file($path)) {
                 continue;
@@ -699,30 +699,13 @@ final class Filesystem
             );
 
             foreach ($iterator as $p => $_info) {
-                $times[] = $this->modifiedTime($p);
+                $times[] = filemtime($p);
             }
         }
 
         /** @psalm-suppress ArgumentTypeCoercion */
         return max($times);
     }
-
-
-
-
-    /**
-     * Get the file's last modification time.
-     *
-     * @param  string  $path
-     * @return int
-     */
-    public function modifiedTime(string $path): int
-    {
-        return filemtime($path);
-    }
-
-
-
 
     /**
      * Joins all given path segments then normalizes the resulting path.
