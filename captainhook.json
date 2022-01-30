@@ -43,7 +43,7 @@
                 ]
             },
             {
-                "action": "php bin/devtools lint:syntax -- {$STAGED_FILES|of-type:php}",
+                "action": "php ./bin/devtools lint:syntax -- {$STAGED_FILES|of-type:php}",
                 "conditions": [
                     {
                         "exec": "\\CaptainHook\\App\\Hook\\Condition\\FileStaged\\OfType",
@@ -52,7 +52,7 @@
                 ]
             },
             {
-                "action": "php bin/devtools lint:style -- {$STAGED_FILES|of-type:php}",
+                "action": "php ./bin/devtools lint:style -- {$STAGED_FILES|of-type:php}",
                 "conditions": [
                     {
                         "exec": "\\CaptainHook\\App\\Hook\\Condition\\FileStaged\\OfType",
