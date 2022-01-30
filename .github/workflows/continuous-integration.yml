@@ -23,12 +23,10 @@ jobs:
         uses: "ramsey/composer-install@v2"
 
       - name: "Check syntax (php-parallel-lint)"
-        shell: "bash"
-        run: "./bin/devtools lint:syntax"
+        run: "./vendor/bin/devtools dev:lint:syntax"
 
       - name: "Check coding standards (PHP_CodeSniffer)"
-        shell: "bash"
-        run: "./bin/devtools lint:style"
+        run: "./vendor/bin/devtools dev:lint:style"
 
   static-analysis:
     name: "Static analysis"
@@ -48,12 +46,10 @@ jobs:
         uses: "ramsey/composer-install@v2"
 
       - name: "Statically analyze code (PHPStan)"
-        shell: "bash"
-        run: "./bin/devtools analyze:phpstan"
+        run: "./vendor/bin/devtools dev:analyze:phpstan"
 
       - name: "Statically analyze code (Psalm)"
-        shell: "bash"
-        run: "./bin/devtools analyze:psalm -- --shepherd"
+        run: "./vendor/bin/devtools dev:analyze:psalm -- --shepherd"
 
   security-analysis:
     name: "Security analysis"
@@ -99,8 +95,7 @@ jobs:
         uses: "ramsey/composer-install@v2"
 
       - name: "Run unit tests (PHPUnit)"
-        shell: "bash"
-        run: "./bin/devtools test:coverage:ci"
+        run: "./vendor/bin/devtools dev:test:coverage:ci"
 
       - name: "Publish coverage report to Codecov"
         uses: "codecov/codecov-action@v2"
@@ -147,5 +142,4 @@ jobs:
           composer-options: "${{ matrix.composer-options }}"
 
       - name: "Run unit tests (PHPUnit)"
-        shell: "bash"
-        run: "./bin/devtools test:unit"
+        run: "./vendor/bin/devtools dev:test:unit"
