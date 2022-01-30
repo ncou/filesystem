@@ -64,6 +64,22 @@ class ReplaceTest extends TestCase
 
 
 
+    /**
+     * @param int    $expectedFilePerms Expected file permissions as three digits (i.e. 755)
+     * @param string $filePath
+     */
+    private function assertFilePermissions(int $expectedFilePerms, string $filePath)
+    {
+        $actualFilePerms = (int) substr(sprintf('%o', fileperms($filePath)), -3);
+        $this->assertEquals(
+            $expectedFilePerms,
+            $actualFilePerms,
+            sprintf('File permissions for %s must be %s. Actual %s', $filePath, $expectedFilePerms, $actualFilePerms)
+        );
+    }
+
+
+
 
 
 
