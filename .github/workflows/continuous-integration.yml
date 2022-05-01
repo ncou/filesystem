@@ -98,7 +98,7 @@ jobs:
         run: "./vendor/bin/devtools dev:test:coverage:ci"
 
       - name: "Publish coverage report to Codecov"
-        uses: "codecov/codecov-action@v2"
+        uses: "codecov/codecov-action@v3"
 
   unit-tests:
     name: "Unit tests"
