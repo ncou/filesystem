@@ -235,11 +235,39 @@ final class Filesystem
      * @param  bool  $lock
      * @return int|bool
      */
-    // TODO : voir si on conserve cette fonction !!! et lui ajouter des tests !!!   https://github.com/illuminate/filesystem/blob/master/Filesystem.php#L155
+    // TODO : voir si on conserve cette fonction !!! et lui ajouter des tests !!!   
+    //https://github.com/illuminate/filesystem/blob/master/Filesystem.php#L155
+    //https://github.com/cakephp/filesystem/blob/master/File.php#L229
+    //https://github.com/spiral/framework/blob/2.8/src/Files/src/Files.php#L113
+    //https://github.com/nette/utils/blob/master/src/Utils/FileSystem.php#L168
     public function write(string $filename, string $content, bool $lock = false)
     {
         return file_put_contents($filename, $content, $lock ? LOCK_EX : 0);
     }
+
+    /**
+     * Write the contents of a file, replacing it atomically if it already exists.
+     *
+     * @param string $path
+     * @param string $content
+     */
+    /*
+    public function write_SAVE(string $path, string $content): void
+    {
+        // If the path already exists and is a symlink, get the real path...
+        clearstatcache(true, $path);
+
+        $path = realpath($path) ?: $path;
+
+        $tempPath = tempnam(dirname($path), basename($path));
+
+        // Fix permissions of tempPath because `tempnam()` creates it with permissions set to 0600...
+        chmod($tempPath, 0777 - umask());
+
+        file_put_contents($tempPath, $content);
+
+        rename($tempPath, $path);
+    }*/
 
 
     /**
@@ -362,29 +390,7 @@ final class Filesystem
 
 
 
-    /**
-     * Write the contents of a file, replacing it atomically if it already exists.
-     *
-     * @param string $path
-     * @param string $content
-     */
-    /*
-    public function write_SAVE(string $path, string $content): void
-    {
-        // If the path already exists and is a symlink, get the real path...
-        clearstatcache(true, $path);
-
-        $path = realpath($path) ?: $path;
-
-        $tempPath = tempnam(dirname($path), basename($path));
-
-        // Fix permissions of tempPath because `tempnam()` creates it with permissions set to 0600...
-        chmod($tempPath, 0777 - umask());
-
-        file_put_contents($tempPath, $content);
-
-        rename($tempPath, $path);
-    }*/
+    
 
 
 
@@ -487,6 +493,7 @@ final class Filesystem
      * @return bool
      */
     // TODO : utiliser plutot un typehint "void" pour le retour car cette fonction ne pourra jamais retourner false car on lévera une exception dans ce cas là. Eventuellemment regarder en utilisant un @ quelle est la valeur de retour
+    // TODO : renommer la méthode en delete() ????
     public function unlink(string $path): bool
     {
         // TODO : il faudrait vérifier que le $path existe bien, sinon lever une notfoundexception !!!!
@@ -525,6 +532,20 @@ final class Filesystem
         }
 
         return unlink($path);
+    }
+
+    public function unlink2(string $filename)
+    {
+        if ($this->exists($filename)) {
+            $result = unlink($filename);
+
+            //Wiping out changes in local file cache
+            clearstatcache(false, $filename);
+
+            return $result;
+        }
+
+        return false;
     }
 
     // TODO : à déplacer dans la future classe Path::class !!!!
@@ -914,6 +935,7 @@ final class Filesystem
      *
      * @return Iterator<string, SplFileInfo>
      */
+    // TODO : vérifier que dans le phpdoc le type de retour est correct. Pourquoi l'iterator a une string comme clés ????
     public function files(string $directory, bool $recursive = true): Traversable
     {
         $iterator = $this->createIterator($directory, $recursive);
@@ -933,6 +955,7 @@ final class Filesystem
      *
      * @return Iterator<string, SplFileInfo>
      */
+    // TODO : vérifier que dans le phpdoc le type de retour est correct. Pourquoi l'iterator a une string comme clés ????
     public function directories(string $directory, bool $recursive = true): Traversable
     {
         $iterator = $this->createIterator($directory, $recursive);
@@ -990,7 +1013,7 @@ final class Filesystem
      *
      * @return Iterator<string, \SplFileInfo>
      */
-    // TODO : à déplacer dans la classe Util ?
+    // TODO : à déplacer dans la classe Util ? ou éventuellement créer une classe Iterator::class
     private function createIterator(string $directory, bool $recursive): Iterator 
     {
         // TODO : vérifier si cela gére bien le cas du $directory vide et du $directory qui ne peut pas être ouvert, car sinon on ava avoir une RuntimeException si le path est vide, et une Unexpected ValueException si le chemin ne peut pas être ouvert !!!!  https://www.php.net/manual/fr/directoryiterator.construct.php
@@ -1038,7 +1061,7 @@ final class Filesystem
      *
      * @return  array
      */
-    // TODO : à déplacer dans la classe Util ?
+    // TODO : à déplacer dans la classe Util ? ou éventuellement créer une classe Iterator::class
     public static function iteratorToArray(\Traversable $iterator)
     {
         $array = [];

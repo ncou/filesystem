@@ -6,6 +6,8 @@ namespace Chiron\Filesystem;
 
 //https://github.com/webmozart/path-util/blob/master/src/Path.php
 
+//https://github.com/SMK-141510170/Ujikom/blob/0086948fa9164ea6495910ddefdf916bb574cedd/vendor/league/flysystem/src/Util.php#L82
+
 final class Path
 {
 
